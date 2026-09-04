@@ -60,7 +60,7 @@ export default function PinnedPage() {
     <div className="p-4 sm:p-6 space-y-4 sm:space-y-6 smooth-scroll">
       <div className="flex items-center gap-3">
         <Pin className="h-5 w-5 sm:h-6 sm:w-6" />
-        <h1 className="text-xl sm:text-2xl font-semibold">Pinned Clips</h1>
+        <h1 className="text-xl sm:text-2xl font-semibold font-sans">Pinned Clips</h1>
         <div className="ml-auto">
           <DashboardThemeToggle />
         </div>

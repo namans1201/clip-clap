@@ -1,15 +1,13 @@
 'use client';
 
 import { useTheme } from 'next-themes';
-import { useEffect, useState } from 'react';
 import { switchTheme } from '@/lib/theme-switch';
+import { useHasMounted } from '@/hooks/use-has-mounted';
 import styles from './theme-toggle-dashboard.module.css';
 
 export function DashboardThemeToggle() {
   const { resolvedTheme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => setMounted(true), []);
+  const mounted = useHasMounted();
 
   if (!mounted) return null;
 

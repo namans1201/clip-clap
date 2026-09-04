@@ -27,6 +27,7 @@ import { Button } from '@/components/ui/button';
 import { ClipContentRenderer } from './clip-content-renderer';
 import { ClipResizeHandle } from './clip-resize-handle';
 import { downloadClipAsFile } from '@/lib/file-download';
+import { useInView } from '@/hooks/use-in-view';
 import styles from './clip-card.module.css';
 
 interface ClipCardProps {
@@ -120,6 +121,17 @@ function ClipCardComponent({
   const maxWidth = useGridMaxWidth();
   const effectiveW = Math.min(previewW ?? persistedW, maxWidth);
   const effectiveH = previewH ?? persistedH;
+
+  // Defers the expensive part of rendering (markdown/code parsing, syntax
+  // highlighting) until the card is near the viewport. A full windowed
+  // grid (mounting/unmounting cards themselves) isn't safe here because
+  // ClipGrid relies on the browser's dense auto-placement algorithm
+  // (`grid-auto-flow: dense`) to pack variable width/height spans —
+  // removing off-screen cards from the DOM would change how the
+  // remaining ones pack. Deferring just the content keeps every card's
+  // grid cell present (so packing stays correct) while skipping the
+  // costly work for cards the user hasn't scrolled to yet.
+  const { ref: contentRef, inView: contentInView } = useInView();
 
   const runAction = async (
     action: (() => Promise<void> | void) | undefined,
@@ -337,7 +349,7 @@ function ClipCardComponent({
           </header>
           <p className={styles.lockedTitle}>Locked</p>
         </section>
-        <footer className={styles.lockedFooter}>
+        <footer className={cn(styles.lockedFooter, onResize && styles.lockedFooterClearResize)}>
           <div className={styles.lockedFooterSummary}>
             <div className={styles.lockedFooterIcon} aria-hidden>
               <FileCode2 className="h-4 w-4 text-primary" />
@@ -448,21 +460,34 @@ function ClipCardComponent({
           </div>
         </div>
 
-        {/* Code area — ClipContentRenderer fills the dark inset panel */}
-        <div className={styles.codeArea}>
+        {/* Code area — ClipContentRenderer fills the dark inset panel.
+            Content itself is gated behind contentInView (see useInView
+            above) so cards far below the fold don't pay for markdown/code
+            parsing until scrolled near. */}
+        <div className={styles.codeArea} ref={contentRef}>
           <div className={styles.codeAreaInner}>
-            <ClipContentRenderer
-              title={clip.title}
-              content={previewContent}
-              maxHeight="100%"
-            />
+            {contentInView ? (
+              <ClipContentRenderer
+                title={clip.title}
+                content={previewContent}
+                maxHeight="100%"
+                small
+              />
+            ) : (
+              <div className="h-full w-full min-h-16 animate-pulse rounded bg-muted/40" />
+            )}
           </div>
         </div>
 
         {/* Footer / actions — time + (optional) group on the left,
             action buttons on the right. Time anchors the bottom-left
             corner of the card so it's always at a predictable spot. */}
-        <div className={styles.actions}>
+        <div
+          className={cn(
+            styles.actions,
+            !isTrashView && onResize && styles.actionsClearResize,
+          )}
+        >
           <div className={styles.actionMeta}>
             <span
               className={styles.timeBadge}

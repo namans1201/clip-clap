@@ -72,6 +72,17 @@ export default function LoginPage() {
     setIsLoading(true);
     try {
       resetClient();
+      // Must be set BEFORE signInWithPassword — the Supabase SSR client
+      // writes auth cookies synchronously as part of that call (see
+      // setBrowserCookies() in lib/supabase/client.ts), and it decides
+      // session-only vs 400-day-persistent cookie by reading this flag at
+      // that exact moment. This was silently missing (nothing in the app
+      // ever called sessionStorage.setItem for it), so every login — public
+      // device checkbox checked or not — got a persistent cookie; the
+      // "Auto-expires after 15 min & tab close" promise in the UI only ever
+      // delivered the 15-minute part (still enforced server-side by
+      // record_session_start/middleware), never the tab-close part.
+      sessionStorage.setItem('is_public_device', String(isPublicDevice));
       const supabase = createClient();
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;

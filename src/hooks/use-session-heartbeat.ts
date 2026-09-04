@@ -32,34 +32,49 @@ export function useSessionHeartbeat() {
 
     const check = async () => {
       if (cancelled) return;
-      const supabase = createClient();
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
+      try {
+        const supabase = createClient();
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
 
-      // No session at all → already logged out somewhere; bounce.
-      if (!session) {
-        await forceLogout();
-        return;
-      }
+        // No session at all → already logged out somewhere; bounce.
+        if (!session) {
+          await forceLogout();
+          return;
+        }
 
-      const { data: row } = await supabase
-        .from('user_sessions')
-        .select('expires_at, is_public_device')
-        .eq('user_id', session.user.id)
-        .maybeSingle();
+        const { data: row } = await supabase
+          .from('user_sessions')
+          .select('expires_at, is_public_device')
+          .eq('user_id', session.user.id)
+          .maybeSingle();
 
-      if (row?.expires_at && new Date(row.expires_at).getTime() < Date.now()) {
-        await forceLogout();
-        return;
-      }
+        if (row?.expires_at && new Date(row.expires_at).getTime() < Date.now()) {
+          await forceLogout();
+          return;
+        }
 
-      // Pick the next interval based on session type. Tail-recursive
-      // setTimeout (rather than setInterval) lets each tick read the
-      // latest is_public_device value without juggling intervals.
-      const nextDelay = row?.is_public_device ? PUBLIC_POLL_MS : TRUSTED_POLL_MS;
-      if (!cancelled) {
-        timer = setTimeout(check, nextDelay);
+        // Pick the next interval based on session type. Tail-recursive
+        // setTimeout (rather than setInterval) lets each tick read the
+        // latest is_public_device value without juggling intervals.
+        const nextDelay = row?.is_public_device ? PUBLIC_POLL_MS : TRUSTED_POLL_MS;
+        if (!cancelled) {
+          timer = setTimeout(check, nextDelay);
+        }
+      } catch (err) {
+        // A transient network/DB error previously killed the poll loop
+        // outright (the setTimeout call below was never reached) — the
+        // user's stale-dashboard redirect would then depend entirely on
+        // the next full navigation hitting the middleware's own expiry
+        // check. Reschedule at the trusted (slower) cadence instead of
+        // giving up, so one bad request doesn't end the loop.
+        if (process.env.NODE_ENV !== 'production') {
+          console.error('useSessionHeartbeat: check failed, retrying later', err);
+        }
+        if (!cancelled) {
+          timer = setTimeout(check, TRUSTED_POLL_MS);
+        }
       }
     };
 

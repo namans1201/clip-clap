@@ -17,7 +17,7 @@ export function ErrorDisplay({ error, onRetry, className }: ErrorDisplayProps) {
       <div className="flex items-start gap-3">
         <AlertCircle className="h-5 w-5 text-destructive flex-shrink-0 mt-0.5" />
         <div className="flex-1 min-w-0">
-          <h3 className="font-semibold text-destructive mb-1">Error</h3>
+          <h3 className="font-semibold font-sans text-destructive mb-1">Error</h3>
           <p className="text-sm text-destructive/90">{error}</p>
           {onRetry && (
             <Button

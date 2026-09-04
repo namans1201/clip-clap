@@ -7,7 +7,22 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-sans);
+  /* NOTE: this used to read `var(--font-sans)` — a no-op that just referred
+     back to Tailwind's own built-in default (the OS system-UI stack), since
+     nothing ever set a `--font-sans` custom property for it to pick up.
+     Geist Sans was loaded in layout.tsx the whole time but never actually
+     applied anywhere. Now wired to the loaded font (General Sans, see
+     layout.tsx) so `font-sans` / `html { @apply font-sans }` below render
+     the intended typeface instead of silently falling back per-OS. */
+  --font-sans: var(--font-general-sans), ui-sans-serif, system-ui, sans-serif;
+  /* Body copy (paragraphs, labels, descriptions) reads in this serif —
+     `html` below applies it as the page default. Headings and buttons
+     opt back into --font-sans explicitly (DialogTitle/CardTitle/SheetTitle
+     via the existing `font-heading` utility below; raw h1-h3 and Button
+     via an explicit `font-sans` className at each call site) — see the
+     components that set `font-sans` alongside their heading/button
+     classes for the full list. */
+  --font-serif: var(--font-gambetta), ui-serif, Georgia, serif;
   --font-mono: var(--font-geist-mono);
   --font-heading: var(--font-sans);
   --color-sidebar-ring: var(--sidebar-ring);
@@ -153,8 +168,13 @@
   body {
     @apply bg-background text-foreground;
   }
+  /* Body copy defaults to the serif (Gambetta) — headings and buttons
+     opt back into font-sans explicitly at each call site (see the
+     --font-serif comment above the theme block for the full list). The
+     login page is exempt: it pins its own font-family and ignores this
+     entirely (see login.module.css). */
   html {
-    @apply font-sans scroll-smooth;
+    @apply font-serif scroll-smooth;
   }
 }
 
@@ -193,17 +213,23 @@ body::before {
   position: fixed;
   inset: 0;
   z-index: -1;
+  /* NOTE: `var(--x) / <alpha>` is only valid inside a color function
+     (rgb(from ... / a), hsl(h s l / a)) — bare `var(--primary) / 0.06` as
+     a gradient color-stop is invalid CSS. One invalid layer invalidates
+     the whole comma-separated `background` shorthand, which is why this
+     gradient rendered as nothing at all. color-mix() achieves the same
+     translucent tint and is valid on its own. */
   background:
-    radial-gradient(ellipse 80% 60% at 20% 10%, var(--primary) / 0.06, transparent 70%),
-    radial-gradient(ellipse 60% 50% at 80% 90%, var(--primary) / 0.04, transparent 60%),
+    radial-gradient(ellipse 80% 60% at 20% 10%, color-mix(in srgb, var(--primary) 6%, transparent), transparent 70%),
+    radial-gradient(ellipse 60% 50% at 80% 90%, color-mix(in srgb, var(--primary) 4%, transparent), transparent 60%),
     linear-gradient(160deg, var(--background), var(--muted) 40%, var(--background));
   pointer-events: none;
 }
 
 .dark body::before {
   background:
-    radial-gradient(ellipse 80% 60% at 20% 10%, var(--primary) / 0.08, transparent 70%),
-    radial-gradient(ellipse 60% 50% at 80% 90%, var(--primary) / 0.05, transparent 60%),
+    radial-gradient(ellipse 80% 60% at 20% 10%, color-mix(in srgb, var(--primary) 8%, transparent), transparent 70%),
+    radial-gradient(ellipse 60% 50% at 80% 90%, color-mix(in srgb, var(--primary) 5%, transparent), transparent 60%),
     linear-gradient(160deg, var(--background), #141c2c 40%, var(--background));
 }
 

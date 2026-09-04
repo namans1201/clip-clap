@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import { useTheme } from 'next-themes';
 
 /**
  * FingerprintButton — port of the reference HTML/CSS/JS pen.
@@ -175,6 +176,21 @@ export default function FingerprintButton() {
   const drawRefs       = useRef<(SVGPathElement | null)[]>([]);
   const isAnimatingRef = useRef(false);
 
+  // The light-mode draw stroke is a giphy.com GIF (see the <defs> below) —
+  // dark mode never references it at all (its .fp-draw stroke points at
+  // the local #fp-grey gradient instead, via the CSS above), but the
+  // <image> tag was previously always in the DOM regardless of theme, so
+  // every dashboard load fetched that GIF from a third party even for
+  // dark-mode users who could never see it. Gated on resolvedTheme so it
+  // also reacts correctly if the user flips the toggle without a page
+  // reload (a mount-only check would miss that). resolvedTheme is
+  // undefined until next-themes resolves it post-mount, so this starts
+  // unrendered on both the server and the first client paint — no
+  // hydration mismatch — and only turns on once we positively know the
+  // theme is light.
+  const { resolvedTheme } = useTheme();
+  const showGifPattern = resolvedTheme === 'light';
+
   // Initial setup — measure each path's length and dash it out so it's
   // hidden until the first hover. Runs once after mount; refs are
   // populated by the ref callbacks before this effect fires.
@@ -253,12 +269,14 @@ export default function FingerprintButton() {
               width="100%"
               patternContentUnits="objectBoundingBox"
             >
-              <image
-                height="1"
-                width="1"
-                preserveAspectRatio="none"
-                href="https://media.giphy.com/media/dAWZiSMbMvObDWP3aA/giphy.gif"
-              />
+              {showGifPattern && (
+                <image
+                  height="1"
+                  width="1"
+                  preserveAspectRatio="none"
+                  href="https://media.giphy.com/media/dAWZiSMbMvObDWP3aA/giphy.gif"
+                />
+              )}
             </pattern>
 
             {/* Dark-mode draw stroke — black → grey diagonal gradient.

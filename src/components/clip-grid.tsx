@@ -54,8 +54,8 @@ function ClipGridComponent({
   return (
     <div
       className={compact
-        ? 'flex flex-col gap-3'
-        : 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 [grid-auto-rows:280px] [grid-auto-flow:dense]'
+        ? 'flex flex-col gap-4'
+        : 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 [grid-auto-rows:280px] [grid-auto-flow:dense]'
       }
     >
       {clips.map((clip) => (

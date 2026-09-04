@@ -1,11 +1,16 @@
 /* ── light theme tokens ── */
 .container {
+  /* Shadow alphas + offsets toned down from the original 0.65/0.75/0.55/0.9
+     — on a pill this wide, an 8px offset / 14px blur neumorphic shadow reads
+     as a distinct glow around the whole edge rather than a subtle bevel,
+     most visible on the dark-mode blue-tinted corners. Same dual-shadow
+     "pressed surface" shape, just quieter. */
   --surface:      #eaeef4;
   --border-col:   rgba(255,255,255,0.8);
-  --shadow-out-a: rgba(168,180,200,0.65);
-  --shadow-out-b: rgba(255,255,255,0.75);
-  --inset-a:      rgba(160,175,198,0.55);
-  --inset-b:      rgba(255,255,255,0.9);
+  --shadow-out-a: rgba(168,180,200,0.35);
+  --shadow-out-b: rgba(255,255,255,0.5);
+  --inset-a:      rgba(160,175,198,0.3);
+  --inset-b:      rgba(255,255,255,0.55);
   --icon-fill:    #1a2233;
   --icon-surface: #eaeef4;
   --text-color:   #1a2233;
@@ -17,10 +22,10 @@
 :global(.dark) .container {
   --surface:      #232e40;
   --border-col:   rgba(60,160,230,0.18);
-  --shadow-out-a: rgba(10,14,22,0.75);
-  --shadow-out-b: rgba(40,62,95,0.4);
-  --inset-a:      rgba(8,12,20,0.65);
-  --inset-b:      rgba(38,58,88,0.35);
+  --shadow-out-a: rgba(10,14,22,0.4);
+  --shadow-out-b: rgba(40,62,95,0.2);
+  --inset-a:      rgba(8,12,20,0.35);
+  --inset-b:      rgba(38,58,88,0.18);
   --icon-fill:    #c8d8ec;
   --icon-surface: #232e40;
   --text-color:   #e2eaf3;
@@ -34,8 +39,8 @@
   border-radius: 14px;
   padding: 6px;
   box-shadow:
-    8px 8px 14px var(--shadow-out-a),
-    -8px -8px 14px var(--shadow-out-b);
+    4px 4px 10px var(--shadow-out-a),
+    -4px -4px 10px var(--shadow-out-b);
   transition: box-shadow 0.3s ease;
 }
 
@@ -46,8 +51,8 @@
   padding: 0.6rem 1.1rem;
   border-radius: 9px;
   box-shadow:
-    inset 8px 8px 12px -8px var(--inset-a),
-    inset -8px -8px 12px -8px var(--inset-b);
+    inset 4px 4px 10px -6px var(--inset-a),
+    inset -4px -4px 10px -6px var(--inset-b);
   box-sizing: border-box;
 }
 

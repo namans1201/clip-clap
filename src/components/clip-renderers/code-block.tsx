@@ -43,6 +43,7 @@ import ruby from 'react-syntax-highlighter/dist/esm/languages/prism/ruby';
 import php from 'react-syntax-highlighter/dist/esm/languages/prism/php';
 import swift from 'react-syntax-highlighter/dist/esm/languages/prism/swift';
 import kotlin from 'react-syntax-highlighter/dist/esm/languages/prism/kotlin';
+import properties from 'react-syntax-highlighter/dist/esm/languages/prism/properties';
 
 SyntaxHighlighter.registerLanguage('python', python);
 SyntaxHighlighter.registerLanguage('javascript', javascript);
@@ -66,6 +67,7 @@ SyntaxHighlighter.registerLanguage('ruby', ruby);
 SyntaxHighlighter.registerLanguage('php', php);
 SyntaxHighlighter.registerLanguage('swift', swift);
 SyntaxHighlighter.registerLanguage('kotlin', kotlin);
+SyntaxHighlighter.registerLanguage('properties', properties);
 
 interface CodeBlockProps {
   /** Plain source code to render. */
@@ -80,6 +82,12 @@ interface CodeBlockProps {
    * Used by callers to control max-height / overflow.
    */
   className?: string;
+  /**
+   * Smaller type size for the ClipGrid card preview, where the code area
+   * is a compact fixed-height box rather than a full reading view (Quick
+   * View dialog / ClipEditor keep the default, larger size).
+   */
+  small?: boolean;
 }
 
 /**
@@ -116,7 +124,7 @@ const stripBackgrounds = (() => {
   };
 })();
 
-export function CodeBlock({ code, language, className }: CodeBlockProps) {
+export function CodeBlock({ code, language, className, small }: CodeBlockProps) {
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === 'dark';
   const style = stripBackgrounds((isDark ? oneDark : oneLight) as PrismStyle);
@@ -132,8 +140,8 @@ export function CodeBlock({ code, language, className }: CodeBlockProps) {
         margin: 0,
         padding: '0.75rem',
         background: 'transparent',
-        fontSize: '0.8125rem',
-        lineHeight: 1.45,
+        fontSize: small ? '0.6875rem' : '0.8125rem',
+        lineHeight: small ? 1.35 : 1.45,
         borderRadius: 0,
       }}
       // Inline code element gets transparent backgrounds too — covers

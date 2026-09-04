@@ -30,25 +30,36 @@ export function useAutoLock(timeoutMinutes: number = 5) {
 
     (async () => {
       // Read the authoritative is_public_device flag from user_sessions.
-      const supabase = createClient();
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      if (cancelled || !session) return;
+      // A transient network/DB error here previously left auto-lock simply
+      // never armed for the rest of this mount (unhandled rejection, no
+      // retry) — not a hard security hole since the server-side expiry in
+      // middleware/record_session_start is the real boundary regardless,
+      // but still a silent feature failure worth catching.
+      try {
+        const supabase = createClient();
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        if (cancelled || !session) return;
 
-      const { data: row } = await supabase
-        .from('user_sessions')
-        .select('is_public_device')
-        .eq('user_id', session.user.id)
-        .maybeSingle();
-      if (cancelled) return;
+        const { data: row } = await supabase
+          .from('user_sessions')
+          .select('is_public_device')
+          .eq('user_id', session.user.id)
+          .maybeSingle();
+        if (cancelled) return;
 
-      // Only enable auto-lock for public devices.
-      if (!row?.is_public_device) return;
+        // Only enable auto-lock for public devices.
+        if (!row?.is_public_device) return;
 
-      events.forEach((e) => document.addEventListener(e, resetTimer, { passive: true }));
-      listenersAttached = true;
-      resetTimer();
+        events.forEach((e) => document.addEventListener(e, resetTimer, { passive: true }));
+        listenersAttached = true;
+        resetTimer();
+      } catch (err) {
+        if (process.env.NODE_ENV !== 'production') {
+          console.error('useAutoLock: failed to determine device type', err);
+        }
+      }
     })();
 
     return () => {

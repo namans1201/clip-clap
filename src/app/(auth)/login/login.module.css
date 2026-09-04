@@ -14,6 +14,14 @@
   --text-circle: hsla(240, 25%, 25%, 1);
   --toggle-color: hsla(230, 25%, 10%, 1);
 
+  /* Pinned to the same system-font stack the whole app was silently
+     rendering in before the global --font-sans fix in globals.css (that
+     fix pointed --font-sans at the newly self-hosted General Sans). The
+     login page is explicitly off-limits for visual changes, so it stays
+     on its original look regardless of what --font-sans becomes
+     elsewhere. */
+  font-family: ui-sans-serif, system-ui, sans-serif;
+
   min-height: 100vh;
   display: flex;
   flex-direction: column;

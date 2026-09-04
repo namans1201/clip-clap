@@ -77,6 +77,7 @@ export function TrashButton({ onClick }: { onClick?: () => void }) {
           flex: 1;
           text-align: center;
           color: var(--font-color);
+          font-family: var(--font-sans);
           font-weight: 600;
           transition: color 0.15s ease;
         }

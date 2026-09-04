@@ -153,7 +153,7 @@ export default function GroupPage() {
             {/* icon + title: tight grouping so the folder reads as a label for the name */}
             <div className="flex items-center gap-1.5 min-w-0">
               <FolderOpen className="h-5 w-5 sm:h-6 sm:w-6 flex-shrink-0" />
-              <h1 className="text-xl sm:text-2xl font-semibold truncate">{group?.name}</h1>
+              <h1 className="text-xl sm:text-2xl font-semibold font-sans truncate">{group?.name}</h1>
             </div>
             {/* edit + delete: tight grouping so the two row-actions read as a pair */}
             <div className="flex items-center gap-0 flex-shrink-0">
@@ -173,7 +173,7 @@ export default function GroupPage() {
         <div className="flex-1 min-w-0">
           <SearchBar value={searchQuery} onChange={handleSearchChange} />
         </div>
-        <NewClipDialog groups={groups} onCreateClip={(content, title) => createClip(content, title, groupId)} />
+        <NewClipDialog groups={groups} onCreateClip={createClip} defaultGroupId={groupId} />
       </div>
 
       <ClipGrid

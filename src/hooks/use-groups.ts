@@ -54,6 +54,61 @@ export function useGroups() {
     fetchDeletedGroups();
   }, [fetchGroups, fetchDeletedGroups]);
 
+  // ── Realtime subscription ──────────────────────────────────────────
+  // Mirrors use-clips.ts: patch local state from the event payload
+  // instead of re-fetching, so a rename/create/delete in one tab (or on
+  // another device) shows up here immediately. Previously groups only
+  // loaded once on mount, so cross-tab/device changes never appeared
+  // until a manual reload.
+  useEffect(() => {
+    const supabase = createClient();
+
+    type GroupRealtimePayload = {
+      eventType: 'INSERT' | 'UPDATE' | 'DELETE';
+      new: Group;
+      old: Partial<Group> & { id?: string };
+    };
+
+    const sortByCreatedAt = (rows: Group[]) =>
+      rows
+        .slice()
+        .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+
+    const upsert = (rows: Group[], next: Group) =>
+      rows.some((g) => g.id === next.id)
+        ? rows.map((g) => (g.id === next.id ? next : g))
+        : sortByCreatedAt([...rows, next]);
+
+    const channel = supabase
+      .channel('groups-realtime')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'groups' },
+        (payload: GroupRealtimePayload) => {
+          if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+            const next = payload.new as Group;
+            if (next.is_deleted) {
+              setGroups((prev) => prev.filter((g) => g.id !== next.id));
+              setDeletedGroups((prev) => upsert(prev, next));
+            } else {
+              setDeletedGroups((prev) => prev.filter((g) => g.id !== next.id));
+              setGroups((prev) => upsert(prev, next));
+            }
+          } else if (payload.eventType === 'DELETE') {
+            const old = payload.old as { id?: string };
+            if (!old?.id) return;
+            setGroups((prev) => prev.filter((g) => g.id !== old.id));
+            setDeletedGroups((prev) => prev.filter((g) => g.id !== old.id));
+          }
+        },
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
   const createGroup = async (name: string) => {
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();

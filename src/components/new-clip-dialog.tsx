@@ -14,6 +14,13 @@ import styles from './new-clip-dialog.module.css';
 interface NewClipDialogProps {
   groups: Group[];
   onCreateClip: (content: string, title?: string, groupId?: string) => Promise<void>;
+  /**
+   * Pre-selected group — set by callers that already have a group in
+   * context (e.g. the group detail page), so "New clip" from inside a
+   * group lands in that group without the user re-picking it from the
+   * dropdown below.
+   */
+  defaultGroupId?: string;
 }
 
 /**
@@ -32,11 +39,11 @@ interface NewClipDialogProps {
  *     scroll lock while open, focus restore on close, busy guard against
  *     double-submit.
  */
-export function NewClipDialog({ groups, onCreateClip }: NewClipDialogProps) {
+export function NewClipDialog({ groups, onCreateClip, defaultGroupId }: NewClipDialogProps) {
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
-  const [groupId, setGroupId] = useState('');
+  const [groupId, setGroupId] = useState(defaultGroupId ?? '');
   const [isLoading, setIsLoading] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const contentRef = useRef<HTMLTextAreaElement>(null);
@@ -47,10 +54,11 @@ export function NewClipDialog({ groups, onCreateClip }: NewClipDialogProps) {
   // runs on close OR unmount.
   useEffect(() => {
     if (!open) {
-      // Reset form state on close.
+      // Reset form state on close — group resets back to the page's
+      // default (if any) rather than always to "No group".
       setTitle('');
       setContent('');
-      setGroupId('');
+      setGroupId(defaultGroupId ?? '');
       setIsExpanded(false);
       return;
     }
@@ -63,7 +71,7 @@ export function NewClipDialog({ groups, onCreateClip }: NewClipDialogProps) {
       document.body.style.overflow = prevOverflow;
       previousFocusRef.current?.focus();
     };
-  }, [open]);
+  }, [open, defaultGroupId]);
 
   // Escape closes the modal — only when not mid-submit so we don't drop
   // an in-flight create.
@@ -306,7 +314,7 @@ const MODAL_CSS = `
     overflow: hidden;
     animation: ccm-rise 0.22s cubic-bezier(0.34, 1.56, 0.64, 1) both;
     font-family: inherit;
-    box-shadow: 0 24px 48px rgba(0, 0, 0, 0.18);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
     display: flex;
     flex-direction: column;
     max-height: 90vh;
@@ -330,6 +338,7 @@ const MODAL_CSS = `
     flex-shrink: 0;
   }
   .ccm-title {
+    font-family: var(--font-sans);
     font-size: 17px;
     font-weight: 500;
     letter-spacing: -0.3px;
@@ -354,7 +363,7 @@ const MODAL_CSS = `
     transition: background 0.12s, color 0.12s;
     font-size: 18px;
     line-height: 1;
-    font-family: inherit;
+    font-family: var(--font-sans);
   }
   .ccm-icon-btn:hover { background: #f3f3f3; color: #0d0d0d; }
   .ccm-body {
@@ -399,7 +408,7 @@ const MODAL_CSS = `
     align-items: center;
     gap: 4px;
     font-size: 11.5px;
-    font-family: inherit;
+    font-family: var(--font-sans);
     font-weight: 500;
     color: #185FA5;
     border: none;
@@ -412,7 +421,7 @@ const MODAL_CSS = `
     width: 100%;
     padding: 9px 13px;
     font-size: 14px;
-    font-family: inherit;
+    font-family: var(--font-sans);
     border: 1px solid #e0e0e0;
     border-radius: 10px;
     background: #fafafa;
@@ -470,7 +479,7 @@ const MODAL_CSS = `
     border-radius: 9px;
     font-size: 13.5px;
     font-weight: 500;
-    font-family: inherit;
+    font-family: var(--font-sans);
     cursor: pointer;
     border: none;
     transition: all 0.12s;
@@ -502,7 +511,7 @@ const MODAL_CSS = `
     background: #1c1a2e;
     color: #e2eaf3;
     border-color: rgba(255, 255, 255, 0.08);
-    box-shadow: 0 24px 48px rgba(0, 0, 0, 0.55);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
   }
   html.dark .ccm-icon-btn { color: #9ba0b3; }
   html.dark .ccm-icon-btn:hover { background: rgba(255,255,255,0.06); color: #f0eef6; }

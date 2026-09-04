@@ -90,7 +90,10 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
                 href={item.href}
                 onClick={onNavigate}
                 className={cn(
-                  'group flex items-center gap-2.5 px-2.5 py-2 rounded-md text-[13.5px] transition-all',
+                  // font-sans: nav links act as menu buttons, not body
+                  // copy, so they stay on the UI font under the new
+                  // Gambetta body default.
+                  'group flex items-center gap-2.5 px-2.5 py-2 rounded-md text-[13.5px] font-sans transition-all',
                   isActive
                     ? 'bg-primary/10 text-primary font-semibold shadow-sm ring-1 ring-primary/15'
                     : 'text-sidebar-foreground/85 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground',
@@ -116,7 +119,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         <div className="space-y-1.5">
           <div className="flex items-center justify-between px-2.5 pb-1">
             <div className="flex items-center gap-1.5">
-              <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-sidebar-foreground/55">
+              <span className="text-[10px] font-bold font-sans uppercase tracking-[0.12em] text-sidebar-foreground/55">
                 Groups
               </span>
               {groups.length > 0 && (
@@ -174,7 +177,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
                     href={`/group/${group.id}`}
                     onClick={onNavigate}
                     className={cn(
-                      'group flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-[13px] transition-all',
+                      'group flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-[13px] font-sans transition-all',
                       isActive
                         ? 'bg-primary/10 text-primary font-semibold shadow-sm ring-1 ring-primary/15'
                         : 'text-sidebar-foreground/80 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground',

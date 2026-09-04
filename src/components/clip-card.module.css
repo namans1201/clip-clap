@@ -10,10 +10,14 @@
    ────────────────────────────────────────────────────────────────────── */
 
 .card {
-  /* Light-mode tokens (overridden by :global(.dark) further down). */
+  /* Light-mode tokens (overridden by :global(.dark) further down). Shadow
+     values toned down from the original 0.25/0.40-alpha, 8-14px blur pair —
+     with a whole grid of these on screen at once the heavier shadows piled
+     up into a muddier, busier look than intended. Same resting/hover
+     relationship, just lighter. */
   --card-bg:          #f3f3f5;
-  --card-shadow:      rgba(100, 116, 139, 0.25);
-  --card-shadow-deep: rgba(80, 90, 110, 0.40);
+  --card-shadow:      rgba(100, 116, 139, 0.14);
+  --card-shadow-deep: rgba(80, 90, 110, 0.22);
   --code-bg:          #e6e7ee;
   --code-fg:          #1e1f2b;
   --header-fg:        #1a1c2c;
@@ -29,7 +33,7 @@
   height: 100%;
   background-color: var(--card-bg);
   border-radius: 10px;
-  box-shadow: 0 8px 18px var(--card-shadow);
+  box-shadow: 0 2px 8px var(--card-shadow);
   transition: transform 0.45s cubic-bezier(0.4, 0, 0.2, 1),
               box-shadow 0.45s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
@@ -38,14 +42,14 @@
 }
 
 .card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 14px 28px var(--card-shadow-deep);
+  transform: translateY(-3px);
+  box-shadow: 0 10px 20px var(--card-shadow-deep);
 }
 
 :global(.dark) .card {
   --card-bg:          #24233b;
-  --card-shadow:      rgba(73, 70, 92, 0.55);
-  --card-shadow-deep: rgba(0, 0, 0, 0.55);
+  --card-shadow:      rgba(20, 18, 32, 0.35);
+  --card-shadow-deep: rgba(0, 0, 0, 0.4);
   --code-bg:          rgb(73, 70, 92);
   --code-fg:          #f0f0f6;
   --header-fg:        #ffffff;
@@ -161,8 +165,12 @@
 .title {
   flex: 1 1 auto;
   text-align: center;
-  font-size: 13px;
-  font-weight: 500;
+  /* Was ui-monospace (matching the rest of the card's code-editor look) —
+     now Pilcrow Rounded Heavy per request, with --font-sans as a fallback
+     if that file ever fails to load rather than dropping to monospace. */
+  font-family: var(--font-pilcrow-rounded), var(--font-sans);
+  font-size: 16px;
+  font-weight: 900;
   color: var(--header-fg);
   /* Pad against the right-side meta so longer filenames don't crash
      into the pin/date stack. */
@@ -171,7 +179,6 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
 /* Top-right corner — pin icon ONLY (time moved to the bottom-left of
@@ -238,6 +245,15 @@
      query mirrors what existed on the prior shadcn Card footer. */
   opacity: 0.5;
   transition: opacity 0.18s ease;
+}
+
+/* Applied only when a resize handle is rendered in this card (see
+   ClipCard). Reserves clearance so the rightmost action button (Copy)
+   never sits underneath the handle's hit area — previously the handle's
+   bottom-right footprint overlapped the button, so hovering near the
+   corner to click Copy grabbed a resize drag instead. */
+.actionsClearResize {
+  padding-right: 26px;
 }
 
 .card:hover .actions,
@@ -310,14 +326,14 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  box-shadow: 0 8px 18px rgba(100, 116, 139, 0.25);
+  box-shadow: 0 2px 8px rgba(100, 116, 139, 0.14);
   transition: transform 0.45s cubic-bezier(0.4, 0, 0.2, 1),
               box-shadow 0.45s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .lockedCard:hover {
   transform: translateY(-3px);
-  box-shadow: 0 12px 24px rgba(80, 90, 110, 0.4);
+  box-shadow: 0 10px 20px rgba(80, 90, 110, 0.22);
 }
 
 :global(.dark) .lockedCard {
@@ -327,7 +343,7 @@
   --footer-bg:  #1c1a2e;
   --button-bg:  #f0eef6;
   --button-fg:  #1c1a2e;
-  box-shadow: 0 8px 18px rgba(73, 70, 92, 0.55);
+  box-shadow: 0 2px 8px rgba(20, 18, 32, 0.35);
 }
 
 .lockedHero {
@@ -365,6 +381,7 @@
 
 .lockedTitle {
   margin: auto 0 0;
+  font-family: var(--font-sans);
   font-size: 1.875rem;
   line-height: 1.1;
   font-weight: 600;
@@ -381,6 +398,12 @@
   gap: 0.75rem;
   font-weight: 700;
   font-size: 0.8125rem;
+}
+
+/* Same reasoning as .actionsClearResize — the locked-card footer's Unlock
+   button sits bottom-right too. */
+.lockedFooterClearResize {
+  padding-right: 1.75rem;
 }
 
 .lockedFooterSummary {
@@ -434,6 +457,7 @@
   border-radius: 999px;
   background-color: var(--button-bg);
   color: var(--button-fg);
+  font-family: var(--font-sans);
   font-size: 13px;
   font-weight: 600;
   display: inline-flex;

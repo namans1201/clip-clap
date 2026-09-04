@@ -20,9 +20,13 @@ import { MermaidDiagram } from './mermaid-diagram';
 interface MarkdownViewProps {
   content: string;
   className?: string;
+  /** See CodeBlock's `small` — same "compact card preview" sizing. */
+  small?: boolean;
 }
 
-const components: Components = {
+// A function rather than a static object so the `code` handler can close
+// over `small` and pass it down to the nested CodeBlock.
+const createComponents = (small?: boolean): Components => ({
   // Fenced code blocks — react-markdown gives us `className="language-xyz"`.
   // Inline code (`like this`) comes through without a language; render
   // a simple monospace span for those.
@@ -50,18 +54,18 @@ const components: Components = {
 
     return (
       <div className="my-3 rounded-md border border-border bg-card overflow-hidden">
-        <CodeBlock code={text} language={lang} className="overflow-x-auto" />
+        <CodeBlock code={text} language={lang} className="overflow-x-auto" small={small} />
       </div>
     );
   },
   h1: ({ children }) => (
-    <h1 className="mt-2 mb-2 text-2xl font-semibold">{children}</h1>
+    <h1 className="mt-2 mb-2 text-2xl font-semibold font-sans">{children}</h1>
   ),
   h2: ({ children }) => (
-    <h2 className="mt-3 mb-2 text-xl font-semibold">{children}</h2>
+    <h2 className="mt-3 mb-2 text-xl font-semibold font-sans">{children}</h2>
   ),
   h3: ({ children }) => (
-    <h3 className="mt-3 mb-1 text-lg font-semibold">{children}</h3>
+    <h3 className="mt-3 mb-1 text-lg font-semibold font-sans">{children}</h3>
   ),
   p: ({ children }) => <p className="my-2 leading-relaxed">{children}</p>,
   ul: ({ children }) => (
@@ -112,12 +116,12 @@ const components: Components = {
         : 'image';
     return <span className="text-xs text-muted-foreground">[image: {label}]</span>;
   },
-};
+});
 
-export function MarkdownView({ content, className }: MarkdownViewProps) {
+export function MarkdownView({ content, className, small }: MarkdownViewProps) {
   return (
     <div className={className}>
-      <div className="px-3 py-2 text-sm">
+      <div className={small ? 'px-3 py-2 text-xs' : 'px-3 py-2 text-sm'}>
         {/* `skipHtml` explicitly drops any raw HTML in the markdown source.
             react-markdown's default already escapes raw HTML (we don't
             ship rehype-raw), so this is documentation-as-defence rather
@@ -125,7 +129,7 @@ export function MarkdownView({ content, className }: MarkdownViewProps) {
             future-proofs the file against accidental rehype-raw additions. */}
         <ReactMarkdown
           remarkPlugins={[remarkGfm]}
-          components={components}
+          components={createComponents(small)}
           skipHtml
         >
           {content}

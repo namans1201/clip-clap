@@ -135,14 +135,21 @@ export function ClipResizeHandle({
     <div
       data-testid="clip-resize-handle"
       className={cn(
-        // Bottom-right corner. Visible at low opacity always (so users
-        // discover the affordance), full opacity on hover/focus-within.
-        // Stop click bubbling so the grab doesn't trigger the card's
-        // onClick (open editor). Hidden on touch devices — drag-resize
-        // is impractical with a finger, and the handle's tiny target
-        // would just frustrate users (mistaps would open the editor).
-        'absolute bottom-1 right-1 z-20',
-        'h-[22px] w-[22px] cursor-nwse-resize',
+        // Bottom-right corner, tucked tight against the true corner pixel
+        // (not bottom-1/right-1) and sized down from the original 22px —
+        // the action-button row reserves clearance for exactly this
+        // footprint (see .actionsClearResize / .lockedFooterClearResize
+        // in clip-card.module.css) so the handle's hit area no longer
+        // sits on top of the rightmost action button (was intercepting
+        // clicks meant for Copy/Unlock). Visible at low opacity always
+        // (so users discover the affordance), full opacity on
+        // hover/focus-within. Stop click bubbling so the grab doesn't
+        // trigger the card's onClick (open editor). Hidden on touch
+        // devices — drag-resize is impractical with a finger, and the
+        // handle's tiny target would just frustrate users (mistaps would
+        // open the editor).
+        'absolute bottom-0.5 right-0.5 z-20',
+        'h-[16px] w-[16px] cursor-nwse-resize',
         'opacity-50 group-hover:opacity-100 group-focus-within:opacity-100',
         'transition-opacity touch-none select-none',
         'flex items-end justify-end',
@@ -170,7 +177,7 @@ export function ClipResizeHandle({
         stroke="currentColor"
         strokeWidth="1.75"
         strokeLinecap="round"
-        className="h-[18px] w-[18px] text-muted-foreground group-hover:text-foreground"
+        className="h-[13px] w-[13px] text-muted-foreground group-hover:text-foreground"
       >
         <line x1="20" y1="6"  x2="6"  y2="20" />
         <line x1="20" y1="11" x2="11" y2="20" />
