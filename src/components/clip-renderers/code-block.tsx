@@ -143,6 +143,14 @@ export function CodeBlock({ code, language, className, small }: CodeBlockProps) 
         fontSize: small ? '0.6875rem' : '0.8125rem',
         lineHeight: small ? 1.35 : 1.45,
         borderRadius: 0,
+        // minHeight (not height — this must never clip content taller
+        // than the card) stretches short snippets to fill the card's
+        // fixed-height grid cell. Without it, the highlighter's own <pre>
+        // was only as tall as its few lines of text, so a long single
+        // line's horizontal scrollbar sat right under the text with a
+        // dead gap of background below it instead of at the card's
+        // actual bottom edge.
+        minHeight: '100%',
       }}
       // Inline code element gets transparent backgrounds too — covers
       // any per-token spans the theme might have given a background.
