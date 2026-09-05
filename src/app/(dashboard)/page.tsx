@@ -1,8 +1,8 @@
 'use client';
 
 import { useMemo, useTransition, useState } from 'react';
-import { useClips } from '@/hooks/use-clips';
-import { useGroups } from '@/hooks/use-groups';
+import { useClipsContext } from '@/contexts/clips-context';
+import { useGroupsContext } from '@/contexts/groups-context';
 import { useCompact } from '@/contexts/compact-context';
 import { useDebounce } from '@/hooks/use-debounce';
 import { ClipGrid } from '@/components/clip-grid';
@@ -15,8 +15,12 @@ import { DashboardLoader } from '@/components/dashboard-loader';
 import { Clip } from '@/types/database';
 
 export default function HomePage() {
-  const { clips, loading, error: clipsError, refetch: refetchClips, createClip, updateClip, togglePin, toggleLock, resizeClip, softDelete } = useClips();
-  const { groups, error: groupsError } = useGroups();
+  // Shared across every dashboard page (see ClipsProvider/GroupsProvider
+  // in (dashboard)/layout.tsx) — one fetch, one realtime subscription
+  // each, not one per page. `clips` here is the user's ENTIRE list
+  // (active + trashed); this page derives its own "active" view below.
+  const { clips: allClips, loading, error: clipsError, refetch: refetchClips, createClip, updateClip, togglePin, toggleLock, resizeClip, softDelete } = useClipsContext();
+  const { groups, error: groupsError } = useGroupsContext();
   const { compact } = useCompact();
   const [selectedClip, setSelectedClip] = useState<Clip | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -28,6 +32,8 @@ export default function HomePage() {
   // grid, which caused a layout shift + visible line every time the user
   // clicked a clip — removed.
   const [, startTransition] = useTransition();
+
+  const clips = useMemo(() => allClips.filter((c) => !c.is_deleted), [allClips]);
 
   const filteredClips = useMemo(() => {
     if (!debouncedQuery.trim()) return clips;

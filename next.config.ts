@@ -62,7 +62,6 @@ const nextConfig: NextConfig = {
   },
 
   compiler: {
-    styledComponents: true,
     // Strip EVERY console.* call in production builds, including error/warn —
     // previously these were excluded, which leaked full error stacks into
     // DevTools. Errors are reported via toast(); we never want raw stacks

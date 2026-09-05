@@ -10,9 +10,9 @@
   /* theme tokens — light mode defaults, dark overrides below */
   --neo-bg:           #ececec;
   --neo-accent:       #2d8cf0;
-  --neo-shadow-light: rgba(255, 255, 255, 0.75);
-  --neo-shadow-dark:  rgba(70, 70, 70, 0.22);
-  --neo-glow:         rgba(45, 140, 240, 0.35);
+  --neo-shadow-light: rgba(255, 255, 255, 0.55);
+  --neo-shadow-dark:  rgba(70, 70, 70, 0.14);
+  --neo-glow:         rgba(45, 140, 240, 0.22);
 
   width:  var(--size);
   height: var(--size);
@@ -50,9 +50,9 @@
 :global(.dark) .neoButton {
   --neo-bg:           #1a2538;
   --neo-accent:       #3ca0e6;
-  --neo-shadow-light: rgba(60, 90, 140, 0.35);
-  --neo-shadow-dark:  rgba(0, 0, 0, 0.6);
-  --neo-glow:         rgba(60, 160, 230, 0.35);
+  --neo-shadow-light: rgba(60, 90, 140, 0.22);
+  --neo-shadow-dark:  rgba(0, 0, 0, 0.4);
+  --neo-glow:         rgba(60, 160, 230, 0.22);
 }
 
 /* Collapsed: slide the button to the screen edge so it stays fully visible */

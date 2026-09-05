@@ -2,8 +2,8 @@
 
 import { useState, useMemo, useTransition } from 'react';
 import { useParams } from 'next/navigation';
-import { useClips } from '@/hooks/use-clips';
-import { useGroups } from '@/hooks/use-groups';
+import { useClipsContext } from '@/contexts/clips-context';
+import { useGroupsContext } from '@/contexts/groups-context';
 import { ClipGrid } from '@/components/clip-grid';
 import { ClipGridSkeleton } from '@/components/clip-card-skeleton';
 import { ClipEditor } from '@/components/clip-editor';
@@ -28,8 +28,11 @@ export default function GroupPage() {
   const params = useParams();
   const groupId = params.id as string;
   
-  const { clips, loading: clipsLoading, createClip, updateClip, togglePin, toggleLock, resizeClip, softDelete } = useClips({ groupId });
-  const { groups, loading: groupsLoading, updateGroup, deleteGroup } = useGroups();
+  // Shared across every dashboard page — see ClipsProvider/GroupsProvider
+  // in (dashboard)/layout.tsx. `allClips` is the user's entire list;
+  // derive this group's active subset client-side below.
+  const { clips: allClips, loading: clipsLoading, createClip, updateClip, togglePin, toggleLock, resizeClip, softDelete } = useClipsContext();
+  const { groups, loading: groupsLoading, updateGroup, deleteGroup } = useGroupsContext();
   const [selectedClip, setSelectedClip] = useState<Clip | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [isEditing, setIsEditing] = useState(false);
@@ -40,6 +43,10 @@ export default function GroupPage() {
   // shift on clip click.
   const [, startTransition] = useTransition();
 
+  const clips = useMemo(
+    () => allClips.filter((c) => !c.is_deleted && c.group_id === groupId),
+    [allClips, groupId],
+  );
   const group = groups.find((g) => g.id === groupId);
   const isLoading = clipsLoading || groupsLoading;
 

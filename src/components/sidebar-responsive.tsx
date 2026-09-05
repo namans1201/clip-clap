@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { useGroups } from '@/hooks/use-groups';
+import { useGroupsContext } from '@/contexts/groups-context';
 import { useCompact } from '@/contexts/compact-context';
 import { CompactToggle } from '@/components/compact-toggle';
 import {
@@ -27,7 +27,7 @@ import { toast } from 'sonner';
 import { SidebarToggle } from '@/components/sidebar-toggle';
 function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
-  const { groups, createGroup } = useGroups();
+  const { groups, createGroup } = useGroupsContext();
   const { compact, setCompact } = useCompact();
   const [newGroupName, setNewGroupName] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);

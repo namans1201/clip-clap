@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useMemo, useTransition } from 'react';
-import { useClips } from '@/hooks/use-clips';
-import { useGroups } from '@/hooks/use-groups';
+import { useClipsContext } from '@/contexts/clips-context';
+import { useGroupsContext } from '@/contexts/groups-context';
 import { ClipGrid } from '@/components/clip-grid';
 import { ClipGridSkeleton } from '@/components/clip-card-skeleton';
 import { SearchBar } from '@/components/search-bar';
@@ -22,8 +22,12 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export default function TrashPage() {
-  const { clips, loading, restore, permanentDelete } = useClips({ showTrashed: true });
-  const { groups, deletedGroups, restoreGroup, permanentDeleteGroup } = useGroups();
+  // Shared across every dashboard page — see ClipsProvider/GroupsProvider
+  // in (dashboard)/layout.tsx. `allClips` is the user's entire list;
+  // derive the trashed subset client-side below.
+  const { clips: allClips, loading, restore, permanentDelete } = useClipsContext();
+  const { groups, deletedGroups, restoreGroup, permanentDeleteGroup } = useGroupsContext();
+  const clips = useMemo(() => allClips.filter((c) => c.is_deleted), [allClips]);
   const [searchQuery, setSearchQuery] = useState('');
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [confirmDeleteGroupId, setConfirmDeleteGroupId] = useState<string | null>(null);

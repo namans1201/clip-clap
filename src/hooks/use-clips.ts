@@ -8,6 +8,15 @@ interface UseClipsOptions {
   groupId?: string | null;
   showPinned?: boolean;
   showTrashed?: boolean;
+  /**
+   * Fetch every clip for the user — trashed and active both — with no
+   * server-side is_deleted/pinned/group filter, and treat every realtime
+   * event as belonging to this view. Used by ClipsProvider so every
+   * dashboard page can share one fetch + one realtime subscription and
+   * just filter the shared list client-side, instead of each page
+   * running its own query and its own channel.
+   */
+  all?: boolean;
 }
 
 export function useClips(options: UseClipsOptions = {}) {
@@ -27,18 +36,20 @@ export function useClips(options: UseClipsOptions = {}) {
         .order('is_pinned', { ascending: false })
         .order('created_at', { ascending: false });
 
-      if (options.showTrashed) {
-        query = query.eq('is_deleted', true);
-      } else {
-        query = query.eq('is_deleted', false);
-      }
+      if (!options.all) {
+        if (options.showTrashed) {
+          query = query.eq('is_deleted', true);
+        } else {
+          query = query.eq('is_deleted', false);
+        }
 
-      if (options.showPinned) {
-        query = query.eq('is_pinned', true);
-      }
+        if (options.showPinned) {
+          query = query.eq('is_pinned', true);
+        }
 
-      if (options.groupId) {
-        query = query.eq('group_id', options.groupId);
+        if (options.groupId) {
+          query = query.eq('group_id', options.groupId);
+        }
       }
 
       const { data, error: fetchError } = await query;
@@ -50,7 +61,7 @@ export function useClips(options: UseClipsOptions = {}) {
     } finally {
       setLoading(false);
     }
-  }, [options.groupId, options.showPinned, options.showTrashed]);
+  }, [options.all, options.groupId, options.showPinned, options.showTrashed]);
 
   useEffect(() => {
     fetchClips();
@@ -68,6 +79,7 @@ export function useClips(options: UseClipsOptions = {}) {
   useEffect(() => {
     const supabase = createClient();
     const passesView = (clip: Clip) => {
+      if (options.all) return true;
       if (options.showTrashed) {
         if (!clip.is_deleted) return false;
       } else {
@@ -128,7 +140,7 @@ export function useClips(options: UseClipsOptions = {}) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [options.groupId, options.showPinned, options.showTrashed]);
+  }, [options.all, options.groupId, options.showPinned, options.showTrashed]);
 
   const createClip = async (content: string, title?: string, groupId?: string) => {
     const supabase = createClient();

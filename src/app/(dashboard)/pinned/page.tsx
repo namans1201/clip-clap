@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useMemo, useTransition } from 'react';
-import { useClips } from '@/hooks/use-clips';
-import { useGroups } from '@/hooks/use-groups';
+import { useClipsContext } from '@/contexts/clips-context';
+import { useGroupsContext } from '@/contexts/groups-context';
 import { ClipGrid } from '@/components/clip-grid';
 import { ClipGridSkeleton } from '@/components/clip-card-skeleton';
 import { ClipEditor } from '@/components/clip-editor';
@@ -12,14 +12,22 @@ import { Clip } from '@/types/database';
 import { Pin } from 'lucide-react';
 
 export default function PinnedPage() {
-  const { clips, loading, updateClip, togglePin, toggleLock, resizeClip, softDelete } = useClips({ showPinned: true });
-  const { groups } = useGroups();
+  // Shared across every dashboard page — see ClipsProvider/GroupsProvider
+  // in (dashboard)/layout.tsx. `allClips` is the user's entire list;
+  // derive the pinned/active subset client-side below.
+  const { clips: allClips, loading, updateClip, togglePin, toggleLock, resizeClip, softDelete } = useClipsContext();
+  const { groups } = useGroupsContext();
   const [selectedClip, setSelectedClip] = useState<Clip | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   // Transition used only for the search-filter; opening a clip is an
   // instant dialog open and doesn't need to defer. Visible pending-bar
   // removed to stop the layout shift on clip click.
   const [, startTransition] = useTransition();
+
+  const clips = useMemo(
+    () => allClips.filter((c) => !c.is_deleted && c.is_pinned),
+    [allClips],
+  );
 
   const filteredClips = useMemo(() => {
     if (!searchQuery.trim()) return clips;
