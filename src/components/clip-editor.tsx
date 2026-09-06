@@ -303,15 +303,19 @@ export function ClipEditor({
                 <Label className="text-muted-foreground text-xs">Content</Label>
                 {/* Extension-aware rendering. Falls through to a styled
                     <pre> identical to the previous look for titleless clips
-                    or unrecognised extensions. */}
+                    or unrecognised extensions.
+
+                    No maxHeight here (unlike the card preview / Quick View) —
+                    this panel already sits inside the dialog body's own
+                    `overflow-auto` (below), which scrolls Title + Group +
+                    Content together as one surface. Giving this its own
+                    capped, independently-scrolling region on top of that
+                    produced two visible scrollbars for a single long clip:
+                    one for the whole panel, one for just the content box. */}
                 <div className="mt-1">
-                  {/* maxHeight bumped from 400px to 70vh so a tall clip
-                      can fill the now-larger dialog (max-h:88vh on sm+).
-                      Scroll still kicks in past that. */}
                   <ClipContentRenderer
                     title={savedClip.title || clip.title}
                     content={savedClip.content}
-                    maxHeight="70vh"
                   />
                 </div>
               </div>

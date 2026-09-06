@@ -318,11 +318,14 @@ function ClipCardComponent({
               <DialogHeader>
                 <DialogTitle>{clip.title || 'Clip Preview'}</DialogTitle>
               </DialogHeader>
+              {/* No maxHeight — this already sits inside the dialog's own
+                  overflow-auto below, so a single surface scrolls the
+                  whole preview instead of nesting two scrollbars (one for
+                  this box, one for the dialog) for a long clip. */}
               <div className="flex-1 overflow-auto">
                 <ClipContentRenderer
                   title={clip.title}
                   content={clip.content}
-                  maxHeight="60vh"
                 />
               </div>
             </DialogContent>
@@ -584,11 +587,13 @@ function ClipCardComponent({
           <DialogHeader>
             <DialogTitle>{clip.title || 'Clip Preview'}</DialogTitle>
           </DialogHeader>
+          {/* No maxHeight — same reasoning as the compact-view Quick View
+              dialog above: this already sits inside its own overflow-auto,
+              so one surface scrolls instead of nesting two scrollbars. */}
           <div className="flex-1 overflow-auto">
             <ClipContentRenderer
               title={clip.title}
               content={clip.content}
-              maxHeight="60vh"
             />
           </div>
           <div className="flex justify-end gap-2 pt-4">
