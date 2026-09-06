@@ -10,10 +10,12 @@
   /* NOTE: this used to read `var(--font-sans)` — a no-op that just referred
      back to Tailwind's own built-in default (the OS system-UI stack), since
      nothing ever set a `--font-sans` custom property for it to pick up.
-     Geist Sans was loaded in layout.tsx the whole time but never actually
-     applied anywhere. Now wired to the loaded font (General Sans, see
-     layout.tsx) so `font-sans` / `html { @apply font-sans }` below render
-     the intended typeface instead of silently falling back per-OS. */
+     Geist Sans was loaded but never actually applied anywhere. Now wired
+     to the loaded font (General Sans) so `font-sans` renders the intended
+     typeface instead of silently falling back per-OS. General Sans itself
+     is loaded in (dashboard)/layout.tsx (dashboard-only — see that file),
+     so this variable only actually resolves within the dashboard route
+     tree; nothing else references it. */
   --font-sans: var(--font-general-sans), ui-sans-serif, system-ui, sans-serif;
   /* Body copy (paragraphs, labels, descriptions) reads in this serif —
      `html` below applies it as the page default. Headings and buttons
@@ -168,11 +170,15 @@
   body {
     @apply bg-background text-foreground;
   }
-  /* Body copy defaults to the serif (Gambetta) — headings and buttons
-     opt back into font-sans explicitly at each call site (see the
-     --font-serif comment above the theme block for the full list). The
-     login page is exempt: it pins its own font-family and ignores this
-     entirely (see login.module.css). */
+  /* NOTE: this `font-serif` only actually resolves on dashboard routes.
+     --font-gambetta is loaded (and this rule re-applied) on the
+     dashboard's own wrapper div in (dashboard)/layout.tsx, not up here at
+     <html> — fonts are scoped per top-level route now (dashboard-only
+     fonts load only for dashboard pages, login's Instrument Sans loads
+     only for login) so no route downloads fonts it never uses. This
+     top-level declaration is harmless dead weight everywhere else: the
+     login page pins its own font-family regardless (see
+     login.module.css) and ignores this entirely. */
   html {
     @apply font-serif scroll-smooth;
   }

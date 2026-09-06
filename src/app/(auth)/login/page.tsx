@@ -3,11 +3,23 @@
 import { useState, useEffect, useCallback, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useTheme } from 'next-themes';
+import { Instrument_Sans } from 'next/font/google';
 import { createClient, resetClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';
 import { Lock } from 'lucide-react';
 import { ProfileButton } from '@/components/profile-button';
 import styles from './login.module.css';
+
+// Used only by the "Clip::Clap" hero title below (login.module.css
+// references --font-instrument-sans in exactly one place). Loaded here
+// rather than the root layout so no other route pays for it — see root
+// layout.tsx for the fuller rationale.
+const instrumentSans = Instrument_Sans({
+  variable: '--font-instrument-sans',
+  subsets: ['latin'],
+  axes: ['wdth'],
+  display: 'swap',
+});
 
 // Note: the expiry duration is enforced server-side now by the
 // public.record_session_start() function (see
@@ -110,7 +122,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className={styles.wrapper}>
+    <div className={`${styles.wrapper} ${instrumentSans.variable}`}>
       <Suspense fallback={null}>
         <SessionExpiredNotice />
       </Suspense>

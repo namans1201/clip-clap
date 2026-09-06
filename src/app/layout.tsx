@@ -1,69 +1,15 @@
 import type { Metadata, Viewport } from "next";
-import localFont from "next/font/local";
-import { Geist_Mono, Instrument_Sans } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
 import "./globals.css";
 
-// General Sans (Fontshare, self-hosted — Fontshare's CDN isn't on the CSP
-// allowlist in next.config.ts, so the woff2 files live in src/fonts and
-// ship from our own origin instead). Replaces Geist Sans as the site's
-// primary UI font — Geist Sans was loaded but never actually wired up
-// (globals.css's `--font-sans` referenced itself rather than the Geist
-// variable, so every page was quietly rendering in each OS's default UI
-// font this whole time). See globals.css for the `--font-sans` fix.
-const generalSans = localFont({
-  src: [
-    { path: "../fonts/general-sans/GeneralSans-Regular.woff2", weight: "400", style: "normal" },
-    { path: "../fonts/general-sans/GeneralSans-Medium.woff2", weight: "500", style: "normal" },
-    { path: "../fonts/general-sans/GeneralSans-Semibold.woff2", weight: "600", style: "normal" },
-    { path: "../fonts/general-sans/GeneralSans-Bold.woff2", weight: "700", style: "normal" },
-  ],
-  variable: "--font-general-sans",
-  display: "swap",
-});
-
-// Gambetta (Fontshare, self-hosted for the same CSP reason as General Sans
-// above) — pairs with General Sans as the site's body-copy serif. Body text
-// (paragraphs, labels, descriptions) reads in Gambetta; headings and
-// buttons stay on General Sans (see globals.css's `--font-sans` /
-// `--font-serif` split, and the explicit `font-sans` overrides added to
-// headings/buttons across components). Single variable-weight file covers
-// 300–700 in both roman and italic, so regular/medium/bold/emphasis in
-// rendered markdown all come from these two files.
-const gambetta = localFont({
-  src: [
-    { path: "../fonts/gambetta/Gambetta-Variable.woff2", weight: "300 700", style: "normal" },
-    { path: "../fonts/gambetta/Gambetta-VariableItalic.woff2", weight: "300 700", style: "italic" },
-  ],
-  variable: "--font-gambetta",
-  display: "swap",
-});
-
-// Pilcrow Rounded (Fontshare, same self-hosting reason as above) — used
-// only for each clip card's filename/title heading (clip-card.module.css
-// `.title`), at its Heavy (900) weight, per request. Single variable file
-// covers 400-900; only weight 900 is actually used today.
-const pilcrowRounded = localFont({
-  src: [
-    { path: "../fonts/pilcrow-rounded/PilcrowRounded-Variable.woff2", weight: "400 900", style: "normal" },
-  ],
-  variable: "--font-pilcrow-rounded",
-  display: "swap",
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-  display: "swap",
-  preload: true,
-});
-
-const instrumentSans = Instrument_Sans({
-  variable: "--font-instrument-sans",
-  subsets: ["latin"],
-  axes: ["wdth"],
-  display: "swap",
-});
+// No font loading here on purpose. General Sans / Gambetta / Pilcrow
+// Rounded / Geist Mono are dashboard-only, and Instrument Sans is
+// login-only — declaring them all here (as this file used to) meant
+// every route downloaded all 9 font files regardless of whether it used
+// any of them, including the login page loading ~236KB of dashboard
+// fonts it never renders a single character in. Each group is now loaded
+// in the layout/page that actually uses it: see (dashboard)/layout.tsx
+// and (auth)/login/page.tsx.
 
 export const metadata: Metadata = {
   title: "ClipClap",
@@ -108,7 +54,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${generalSans.variable} ${gambetta.variable} ${pilcrowRounded.variable} ${geistMono.variable} ${instrumentSans.variable} h-full antialiased scroll-smooth`}
+      className="h-full antialiased scroll-smooth"
       suppressHydrationWarning
     >
       {/* suppressHydrationWarning here (as on <html> above) is Next.js's
