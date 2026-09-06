@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Files, Pin, Folder, Plus, Menu } from 'lucide-react';
+import { Files, Pin, Folder, Inbox, Plus, Menu } from 'lucide-react';
 import { TrashButton } from '@/components/trash-button';
 import { LockButton } from '@/components/lock-button';
 import { Button } from '@/components/ui/button';
@@ -52,8 +52,9 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   };
 
   const navItems = [
-    { href: '/',       label: 'All Clips', icon: Files },
-    { href: '/pinned', label: 'Pinned',    icon: Pin   },
+    { href: '/',          label: 'All Clips',  icon: Files },
+    { href: '/pinned',    label: 'Pinned',     icon: Pin   },
+    { href: '/ungrouped', label: 'Ungrouped',  icon: Inbox },
   ];
 
   return (
