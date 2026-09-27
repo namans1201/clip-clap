@@ -328,17 +328,42 @@ const LANGUAGE_PROBES: readonly LanguageProbe[] = [
       { re: /<\/\w+>/, weight: 1 },
     ],
   },
-  {
-    // .env / .properties / .ini-style config: bare KEY=value lines, no
-    // declaration keyword and no `$` sigil (that's what tells this apart
-    // from a shell script's variable assignments or PHP's `$var = ...`).
-    lang: 'properties',
-    patterns: [
-      { re: /(^[A-Za-z_][A-Za-z0-9_]*=.*$\n){3,}/m, weight: 4 },
-      { re: /^[A-Za-z_][A-Za-z0-9_]*=\S+$/m, weight: 1 },
-    ],
-  },
 ];
+
+/**
+ * .env / .properties / .ini-style config, checked deterministically (like
+ * JSON) rather than via a probe: EVERY non-blank line must be a bare
+ * `KEY=value` assignment, a `#`/`;`/`!` comment, or an ini `[section]`
+ * header. No declaration keyword and no `$` sigil — that's what tells this
+ * apart from a shell script's `export FOO=...` or PHP's `$var = ...`.
+ *
+ * Needs at least two assignments, or a single one whose key is
+ * UPPER_SNAKE_CASE (e.g. a lone `API_KEY=...` paste). The old probe
+ * required 3+ consecutive assignment lines, so a two-secret clip rendered
+ * as plain text.
+ *
+ * Also exported for inferKind(), which runs it before the markdown sniff —
+ * a `# Database` comment in an env file otherwise reads as an ATX heading.
+ */
+const KV_ASSIGNMENT = /^([A-Za-z_][\w.-]*)[ \t]*=/;
+const KV_COMMENT = /^[#;!]/;
+const INI_SECTION = /^\[[^\]]+\]$/;
+const UPPER_SNAKE_KEY = /^[A-Z][A-Z0-9_]*$/;
+
+export function looksLikeKeyValueConfig(content: string | null | undefined): boolean {
+  if (!content) return false;
+  let assignments = 0;
+  let upperSnake = false;
+  for (const raw of content.split(/\r?\n/)) {
+    const line = raw.trim();
+    if (!line || KV_COMMENT.test(line) || INI_SECTION.test(line)) continue;
+    const match = KV_ASSIGNMENT.exec(line);
+    if (!match) return false;
+    assignments++;
+    if (UPPER_SNAKE_KEY.test(match[1])) upperSnake = true;
+  }
+  return assignments >= 2 || (assignments === 1 && upperSnake);
+}
 
 function detectLanguageFromContent(content: string | null | undefined): string | null {
   if (!content) return null;
@@ -357,6 +382,8 @@ function detectLanguageFromContent(content: string | null | undefined): string |
       // Not valid JSON — fall through to the heuristic probes below.
     }
   }
+
+  if (looksLikeKeyValueConfig(trimmed)) return 'properties';
 
   let best: { lang: string; score: number } | null = null;
   let runnerUpScore = 0;
@@ -412,6 +439,7 @@ export function inferKind(
   }
   if (dotfileLanguage(title)) return 'code';
   if (looksLikeMermaid(content)) return 'mermaid';
+  if (looksLikeKeyValueConfig(content)) return 'code';
   if (looksLikeMarkdown(content)) return 'markdown';
   if (detectLanguageFromContent(content)) return 'code';
   return 'text';
@@ -434,6 +462,9 @@ export function inferLanguage(
   if (ext && ext in EXT_TO_PRISM) return EXT_TO_PRISM[ext];
   const dotfile = dotfileLanguage(title);
   if (dotfile) return dotfile;
+  // Mirrors inferKind(): a short config paste (under the content-detection
+  // length floor) is still classified as 'code', so give it the language too.
+  if (looksLikeKeyValueConfig(content)) return 'properties';
   return detectLanguageFromContent(content);
 }
 
