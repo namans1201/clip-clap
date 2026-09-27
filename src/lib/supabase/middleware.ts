@@ -33,9 +33,20 @@ export async function updateSession(request: NextRequest) {
     }
   );
 
+  // getClaims() verifies the JWT locally against the project's public
+  // signing key (fetched once and cached) instead of calling the Supabase
+  // Auth server on every request the way getUser() does — this removes a
+  // network round trip from every single page load and prefetch. The
+  // trade-off: a session revoked server-side (e.g. password change,
+  // manual revoke) stays technically valid here until the access token
+  // itself expires (~1h), rather than being caught on the very next
+  // request. The user_sessions expiry check right below is unaffected —
+  // it still hits the DB and remains the authoritative, un-spoofable cap
+  // for both public-device (15 min) and trusted (30 day) sessions.
   const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    data: claims,
+  } = await supabase.auth.getClaims();
+  const user = claims ? { id: claims.claims.sub } : null;
 
   // --- Server-enforced session expiry ---
   // Read the authoritative expires_at from public.user_sessions (RLS lets the

@@ -2,6 +2,7 @@
 
 import { createContext, useContext, type ReactNode } from 'react';
 import { useClips } from '@/hooks/use-clips';
+import { Clip } from '@/types/database';
 
 type ClipsValue = ReturnType<typeof useClips>;
 
@@ -19,9 +20,21 @@ const ClipsContext = createContext<ClipsValue | null>(null);
  * (see e.g. the Home page's `clips.filter(c => !c.is_deleted)`), so
  * switching pages is instant and there's exactly one clips-realtime
  * channel open at a time, not one per page.
+ *
+ * initialClips/initialError come from (dashboard)/layout.tsx, which
+ * fetches them server-side (lib/dashboard-data.ts) before this ever
+ * mounts — see useClips for what that skips client-side.
  */
-export function ClipsProvider({ children }: { children: ReactNode }) {
-  const value = useClips({ all: true });
+export function ClipsProvider({
+  children,
+  initialClips,
+  initialError,
+}: {
+  children: ReactNode;
+  initialClips?: Clip[];
+  initialError?: string | null;
+}) {
+  const value = useClips({ all: true, initialClips, initialError });
   return <ClipsContext.Provider value={value}>{children}</ClipsContext.Provider>;
 }
 

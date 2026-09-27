@@ -1,15 +1,30 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { Group } from '@/types/database';
 import { toast } from 'sonner';
 
-export function useGroups() {
-  const [groups, setGroups] = useState<Group[]>([]);
+interface UseGroupsOptions {
+  /**
+   * Active groups already fetched server-side (see (dashboard)/layout.tsx
+   * + lib/dashboard-data.ts). When provided, seeds state and skips the
+   * mount-time fetchGroups() call, mirroring useClips' initialClips.
+   * Deleted groups aren't prefetched — nothing gates its own loading flag
+   * on that fetch — so fetchDeletedGroups always runs on mount as before.
+   */
+  initialGroups?: Group[];
+  /** Paired with initialGroups — a server-side fetch error, if any. */
+  initialError?: string | null;
+}
+
+export function useGroups(options: UseGroupsOptions = {}) {
+  const hasInitialData = options.initialGroups !== undefined;
+  const [groups, setGroups] = useState<Group[]>(options.initialGroups ?? []);
   const [deletedGroups, setDeletedGroups] = useState<Group[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(!hasInitialData);
+  const [error, setError] = useState<string | null>(options.initialError ?? null);
+  const skipNextFetchRef = useRef(hasInitialData);
 
   const fetchGroups = useCallback(async () => {
     const supabase = createClient();
@@ -50,7 +65,11 @@ export function useGroups() {
   }, []);
 
   useEffect(() => {
-    fetchGroups();
+    if (skipNextFetchRef.current) {
+      skipNextFetchRef.current = false;
+    } else {
+      fetchGroups();
+    }
     fetchDeletedGroups();
   }, [fetchGroups, fetchDeletedGroups]);
 
@@ -62,6 +81,8 @@ export function useGroups() {
   // until a manual reload.
   useEffect(() => {
     const supabase = createClient();
+    let cancelled = false;
+    let channel: ReturnType<typeof supabase.channel> | null = null;
 
     type GroupRealtimePayload = {
       eventType: 'INSERT' | 'UPDATE' | 'DELETE';
@@ -79,33 +100,42 @@ export function useGroups() {
         ? rows.map((g) => (g.id === next.id ? next : g))
         : sortByCreatedAt([...rows, next]);
 
-    const channel = supabase
-      .channel('groups-realtime')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'groups' },
-        (payload: GroupRealtimePayload) => {
-          if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
-            const next = payload.new as Group;
-            if (next.is_deleted) {
-              setGroups((prev) => prev.filter((g) => g.id !== next.id));
-              setDeletedGroups((prev) => upsert(prev, next));
-            } else {
-              setDeletedGroups((prev) => prev.filter((g) => g.id !== next.id));
-              setGroups((prev) => upsert(prev, next));
+    // Wait for the session to load (and its token to reach the realtime
+    // client) before subscribing — see the matching comment in
+    // use-clips.ts for why subscribing first and authenticating after
+    // silently drops every event for this channel's whole lifetime.
+    supabase.auth.getSession().then(() => {
+      if (cancelled) return;
+
+      channel = supabase
+        .channel('groups-realtime')
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'groups' },
+          (payload: GroupRealtimePayload) => {
+            if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+              const next = payload.new as Group;
+              if (next.is_deleted) {
+                setGroups((prev) => prev.filter((g) => g.id !== next.id));
+                setDeletedGroups((prev) => upsert(prev, next));
+              } else {
+                setDeletedGroups((prev) => prev.filter((g) => g.id !== next.id));
+                setGroups((prev) => upsert(prev, next));
+              }
+            } else if (payload.eventType === 'DELETE') {
+              const old = payload.old as { id?: string };
+              if (!old?.id) return;
+              setGroups((prev) => prev.filter((g) => g.id !== old.id));
+              setDeletedGroups((prev) => prev.filter((g) => g.id !== old.id));
             }
-          } else if (payload.eventType === 'DELETE') {
-            const old = payload.old as { id?: string };
-            if (!old?.id) return;
-            setGroups((prev) => prev.filter((g) => g.id !== old.id));
-            setDeletedGroups((prev) => prev.filter((g) => g.id !== old.id));
-          }
-        },
-      )
-      .subscribe();
+          },
+        )
+        .subscribe();
+    });
 
     return () => {
-      supabase.removeChannel(channel);
+      cancelled = true;
+      if (channel) supabase.removeChannel(channel);
     };
   }, []);
 

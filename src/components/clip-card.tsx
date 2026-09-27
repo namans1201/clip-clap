@@ -359,7 +359,15 @@ function ClipCardComponent({
             </div>
             <div className={styles.lockedFooterText}>
               <span>{filename}</span>
-              <span>{relativeTime}</span>
+              {/* suppressHydrationWarning: relativeTime is computed from
+                  "now" at render time, and this now renders server-side
+                  too (see (dashboard)/layout.tsx) — a slow hydration can
+                  legitimately land in a different minute/hour bucket than
+                  the SSR pass. Harmless and self-corrects on the next
+                  render; same mitigation already used on <html>/<body>
+                  in the root layout for a similar class of expected,
+                  benign mismatch. */}
+              <span suppressHydrationWarning>{relativeTime}</span>
             </div>
           </div>
           <button
@@ -494,7 +502,19 @@ function ClipCardComponent({
           <div className={styles.actionMeta}>
             <span
               className={styles.timeBadge}
-              title={new Date(clip.created_at).toLocaleString()}
+              // Fixed locale ('en-US'), not the runtime's default — this
+              // now renders server-side too (clips arrive pre-fetched;
+              // see (dashboard)/layout.tsx), and toLocaleString() with no
+              // locale argument resolves to whatever locale each
+              // environment happens to default to (e.g. the server's OS
+              // locale vs. the browser's), which produced a real
+              // hydration mismatch: "27/9/2026, 7:26:10 am" server-side
+              // vs. "9/27/2026, 7:26:10 AM" client-side for the exact
+              // same Date.
+              title={new Date(clip.created_at).toLocaleString('en-US')}
+              // Same relativeTime hydration reasoning as the locked-card
+              // footer above — see that comment.
+              suppressHydrationWarning
             >
               {relativeTime}
             </span>

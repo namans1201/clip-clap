@@ -2,6 +2,7 @@
 
 import { createContext, useContext, type ReactNode } from 'react';
 import { useGroups } from '@/hooks/use-groups';
+import { Group } from '@/types/database';
 
 type GroupsValue = ReturnType<typeof useGroups>;
 
@@ -12,9 +13,21 @@ const GroupsContext = createContext<GroupsValue | null>(null);
  * it was previously called independently in the sidebar AND in every
  * page — meaning two fetches and two realtime channels open on any given
  * dashboard view. Sharing one instance here removes that duplication.
+ *
+ * initialGroups/initialError come from (dashboard)/layout.tsx, which
+ * fetches them server-side (lib/dashboard-data.ts) before this ever
+ * mounts — see useGroups for what that skips client-side.
  */
-export function GroupsProvider({ children }: { children: ReactNode }) {
-  const value = useGroups();
+export function GroupsProvider({
+  children,
+  initialGroups,
+  initialError,
+}: {
+  children: ReactNode;
+  initialGroups?: Group[];
+  initialError?: string | null;
+}) {
+  const value = useGroups({ initialGroups, initialError });
   return <GroupsContext.Provider value={value}>{children}</GroupsContext.Provider>;
 }
 

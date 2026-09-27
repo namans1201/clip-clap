@@ -11,7 +11,7 @@ import { NewClipDialog } from '@/components/new-clip-dialog';
 import { SearchBar } from '@/components/search-bar';
 import { DashboardThemeToggle } from '@/components/theme-toggle-dashboard';
 import { ErrorDisplay } from '@/components/error-display';
-import { DashboardLoader } from '@/components/dashboard-loader';
+import { ClipGridSkeleton } from '@/components/clip-card-skeleton';
 import { Clip } from '@/types/database';
 
 export default function HomePage() {
@@ -53,7 +53,18 @@ export default function HomePage() {
     startTransition(() => setSearchQuery(value));
   };
 
-  if (loading) return <DashboardLoader />;
+  if (loading) {
+    return (
+      <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
+        <div className="flex items-center gap-2">
+          <div className="h-10 bg-muted rounded flex-1 min-w-0 animate-pulse" />
+          <div className="h-10 w-10 bg-muted rounded animate-pulse" />
+          <div className="h-10 w-10 bg-muted rounded animate-pulse" />
+        </div>
+        <ClipGridSkeleton count={6} />
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 sm:p-6 space-y-4 sm:space-y-6 smooth-scroll">
