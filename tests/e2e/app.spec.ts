@@ -157,7 +157,11 @@ test.describe('Dashboard', () => {
   });
 
   test('renders lock button', async ({ page }) => {
-    await expect(page.locator('button[aria-label="Lock & logout"]')).toBeVisible();
+    // The lock button's inner <button> carries FingerprintButton's own
+    // aria-label ("Press to scan fingerprint") since the visual redesign
+    // in the "Prod Ready" commit — LockButton itself is just a wrapping
+    // <div onClick> with no aria-label of its own. See lock-button.tsx.
+    await expect(page.locator('button[aria-label="Press to scan fingerprint"]')).toBeVisible();
   });
 
   test('search filters clips with debounce', async ({ page }) => {
@@ -268,7 +272,9 @@ test.describe('Lock & Logout', () => {
 
   test('lock button logs out and redirects to login', async ({ page }) => {
     await login(page);
-    await page.locator('button[aria-label="Lock & logout"]').click();
+    // See the "renders lock button" test above for why this targets
+    // FingerprintButton's aria-label rather than "Lock & logout".
+    await page.locator('button[aria-label="Press to scan fingerprint"]').click();
     await expect(page).toHaveURL('/login', { timeout: 10000 });
   });
 });

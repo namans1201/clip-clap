@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { Clip } from '@/types/database';
 
@@ -17,12 +17,27 @@ interface UseClipsOptions {
    * running its own query and its own channel.
    */
   all?: boolean;
+  /**
+   * Clips already fetched server-side (see (dashboard)/layout.tsx +
+   * lib/dashboard-data.ts). When provided, the hook seeds its state from
+   * this instead of starting empty + loading, and skips the mount-time
+   * fetch it would otherwise fire — so the dashboard never shows a
+   * loading state on a normal page load. The realtime subscription and
+   * every mutation below still work exactly as without it.
+   */
+  initialClips?: Clip[];
+  /** Paired with initialClips — a server-side fetch error, if any. */
+  initialError?: string | null;
 }
 
 export function useClips(options: UseClipsOptions = {}) {
-  const [clips, setClips] = useState<Clip[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const hasInitialData = options.initialClips !== undefined;
+  const [clips, setClips] = useState<Clip[]>(options.initialClips ?? []);
+  const [loading, setLoading] = useState(!hasInitialData);
+  const [error, setError] = useState<string | null>(options.initialError ?? null);
+  // Consumed by the very first run of the mount effect below only — every
+  // later call to fetchClips (retry, refetch(), etc.) behaves normally.
+  const skipNextFetchRef = useRef(hasInitialData);
 
   const fetchClips = useCallback(async () => {
     const supabase = createClient();
@@ -64,6 +79,10 @@ export function useClips(options: UseClipsOptions = {}) {
   }, [options.all, options.groupId, options.showPinned, options.showTrashed]);
 
   useEffect(() => {
+    if (skipNextFetchRef.current) {
+      skipNextFetchRef.current = false;
+      return;
+    }
     fetchClips();
   }, [fetchClips]);
 
@@ -78,6 +97,9 @@ export function useClips(options: UseClipsOptions = {}) {
   // safely ignored.
   useEffect(() => {
     const supabase = createClient();
+    let cancelled = false;
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+
     const passesView = (clip: Clip) => {
       if (options.all) return true;
       if (options.showTrashed) {
@@ -102,43 +124,59 @@ export function useClips(options: UseClipsOptions = {}) {
       old: Partial<Clip> & { id?: string };
     };
 
-    const channel = supabase
-      .channel('clips-realtime')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'clips' },
-        (payload: ClipRealtimePayload) => {
-          if (payload.eventType === 'INSERT') {
-            const next = payload.new as Clip;
-            if (!passesView(next)) return;
-            setClips((prev) =>
-              prev.some((c) => c.id === next.id) ? prev : sortClips([next, ...prev]),
-            );
-          } else if (payload.eventType === 'UPDATE') {
-            const next = payload.new as Clip;
-            setClips((prev) => {
-              const passes = passesView(next);
-              const existing = prev.some((c) => c.id === next.id);
-              if (passes && existing) {
-                return sortClips(prev.map((c) => (c.id === next.id ? next : c)));
-              }
-              if (passes && !existing) {
-                return sortClips([next, ...prev]);
-              }
-              // No longer passes filter — drop it from this view.
-              return prev.filter((c) => c.id !== next.id);
-            });
-          } else if (payload.eventType === 'DELETE') {
-            const old = payload.old as { id?: string };
-            if (!old?.id) return;
-            setClips((prev) => prev.filter((c) => c.id !== old.id));
-          }
-        },
-      )
-      .subscribe();
+    // Wait for the session to actually be loaded — and its access token
+    // handed to the realtime client — before subscribing. Subscribing
+    // first and authenticating later doesn't work: postgres_changes is
+    // filtered per-subscriber by this table's RLS policies, evaluated
+    // against whatever auth the socket had at the moment it joined the
+    // channel. Firing .subscribe() immediately on mount (as this used to)
+    // raced GoTrueClient's own async session bootstrap — the channel
+    // could (and, per live testing, reliably did) join before the user's
+    // JWT was attached, so it joined as an effectively anonymous
+    // connection and every row got silently filtered out for its
+    // lifetime, with no error and a perfectly normal "SUBSCRIBED" status.
+    supabase.auth.getSession().then(() => {
+      if (cancelled) return;
+
+      channel = supabase
+        .channel('clips-realtime')
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'clips' },
+          (payload: ClipRealtimePayload) => {
+            if (payload.eventType === 'INSERT') {
+              const next = payload.new as Clip;
+              if (!passesView(next)) return;
+              setClips((prev) =>
+                prev.some((c) => c.id === next.id) ? prev : sortClips([next, ...prev]),
+              );
+            } else if (payload.eventType === 'UPDATE') {
+              const next = payload.new as Clip;
+              setClips((prev) => {
+                const passes = passesView(next);
+                const existing = prev.some((c) => c.id === next.id);
+                if (passes && existing) {
+                  return sortClips(prev.map((c) => (c.id === next.id ? next : c)));
+                }
+                if (passes && !existing) {
+                  return sortClips([next, ...prev]);
+                }
+                // No longer passes filter — drop it from this view.
+                return prev.filter((c) => c.id !== next.id);
+              });
+            } else if (payload.eventType === 'DELETE') {
+              const old = payload.old as { id?: string };
+              if (!old?.id) return;
+              setClips((prev) => prev.filter((c) => c.id !== old.id));
+            }
+          },
+        )
+        .subscribe();
+    });
 
     return () => {
-      supabase.removeChannel(channel);
+      cancelled = true;
+      if (channel) supabase.removeChannel(channel);
     };
   }, [options.all, options.groupId, options.showPinned, options.showTrashed]);
 
