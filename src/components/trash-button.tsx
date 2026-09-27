@@ -6,7 +6,18 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
 export function TrashButton({ onClick }: { onClick?: () => void }) {
-  const { theme } = useTheme();
+  // resolvedTheme, not theme — theme is the literal stored preference,
+  // which defaults to "system" and stays that string forever for anyone
+  // who's never explicitly toggled light/dark. Comparing that to 'dark'
+  // meant isDark stayed permanently false for exactly that group (first
+  // visit, incognito, anyone leaving it on the system default) even
+  // though the rest of the page was correctly rendering dark — this
+  // button alone kept using its light-mode box-shadow (including a
+  // white glow tuned for a light background) no matter how many times
+  // the page was reloaded. resolvedTheme is the already-computed
+  // light/dark value and is what every other themed component here
+  // (fingerprint-button.tsx, theme-toggle-dashboard.tsx) already uses.
+  const { resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const pathname = usePathname();
 
@@ -15,7 +26,7 @@ export function TrashButton({ onClick }: { onClick?: () => void }) {
     setMounted(true);
   }, []);
 
-  const isDark = mounted && theme === 'dark';
+  const isDark = mounted && resolvedTheme === 'dark';
   const isActive = pathname === '/trash';
 
   return (
